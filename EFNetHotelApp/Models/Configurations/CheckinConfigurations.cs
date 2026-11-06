@@ -1,0 +1,22 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace EFNetHotelApp.Models.Configurations
+{
+    public class CheckinConfigurations : IEntityTypeConfiguration<Checkin>
+    {
+        public void Configure(EntityTypeBuilder<Checkin> builder)
+        {
+            builder.HasOne(ch => ch.Client)
+                   .WithMany(c => c.Checkins)
+                   .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(ch => ch.Room)
+                   .WithMany(r => r.Checkins)
+                   .OnDelete(DeleteBehavior.SetNull);
+        }
+    }
+}
