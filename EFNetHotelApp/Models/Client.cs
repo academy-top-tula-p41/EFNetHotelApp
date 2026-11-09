@@ -9,8 +9,8 @@ namespace EFNetHotelApp.Models
         public int Id { get; set; }
         public string Name { get; set; } = null!;
         public string? Phone { get; set; }
-        public Document Document { get; set; } = null!;
+        public Document Document { get; set; } = new();
 
-        public List<Checkin>? Checkins { get; set; }
+        public List<Checkin>? Checkins { get; set; } = new();
     }
 }

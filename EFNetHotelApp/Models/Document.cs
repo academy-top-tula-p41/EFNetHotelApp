@@ -9,7 +9,7 @@ namespace EFNetHotelApp.Models
         public Client Client { get; set; } = null!;
         public int ClientId { get; set; }
 
-        public string? Series { get; set; }
-        public string Number { get; set; } = null!;
+        public string? Series { get; set; } = "";
+        public string Number { get; set; } = "";
     }
 }

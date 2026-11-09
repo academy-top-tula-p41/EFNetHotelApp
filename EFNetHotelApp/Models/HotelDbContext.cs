@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using EFNetHotelApp.Models.Configurations;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -22,6 +23,14 @@ namespace EFNetHotelApp.Models
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.ApplyConfiguration(new DocumentConfigurations());
+            modelBuilder.ApplyConfiguration(new ComfortConfigurations());
+            modelBuilder.ApplyConfiguration(new ClientConfigurations());
+            modelBuilder.ApplyConfiguration(new ServiceConfigurations());
+            modelBuilder.ApplyConfiguration(new RoomConfigurations());
+            modelBuilder.ApplyConfiguration(new CheckinConfigurations());
+
         }
     }
 }

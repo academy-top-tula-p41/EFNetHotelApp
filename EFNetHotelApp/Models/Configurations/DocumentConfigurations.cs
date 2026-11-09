@@ -10,11 +10,13 @@ namespace EFNetHotelApp.Models.Configurations
     {
         public void Configure(EntityTypeBuilder<Document> builder)
         {
-            builder.HasAlternateKey(d => new { d.Series, d.Number });
+            builder.HasKey(d => new { d.Series, d.Number });
 
             builder.HasOne(d => d.Client)
                    .WithOne(c => c.Document)
                    .HasForeignKey<Document>(d => d.ClientId);
+
+            builder.ToTable("Documents");
         }
     }
 }

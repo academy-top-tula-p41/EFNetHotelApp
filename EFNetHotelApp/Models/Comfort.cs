@@ -8,5 +8,7 @@ namespace EFNetHotelApp.Models
     {
         public int Id { get; set; }
         public string Title { get; set; } = null!;
+
+        public List<Room> Rooms { get; set; } = new();
     }
 }

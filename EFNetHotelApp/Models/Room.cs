@@ -13,6 +13,6 @@ namespace EFNetHotelApp.Models
         public Comfort? Comfort { get; set; }
         public int? ComfortId { get; set; }
 
-        public List<Checkin>? Checkins { get; set; }
+        public List<Checkin>? Checkins { get; set; } = new();
     }
 }

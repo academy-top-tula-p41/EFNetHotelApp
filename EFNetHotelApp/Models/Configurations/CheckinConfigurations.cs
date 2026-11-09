@@ -16,7 +16,22 @@ namespace EFNetHotelApp.Models.Configurations
 
             builder.HasOne(ch => ch.Room)
                    .WithMany(r => r.Checkins)
-                   .OnDelete(DeleteBehavior.SetNull);
+                   .OnDelete(DeleteBehavior.NoAction);
+
+            builder.HasMany(c => c.Services)
+                   .WithMany(s => s.Checkins)
+                   .UsingEntity<CheckinService>(
+                    cs => cs.HasOne(cs => cs.Service)
+                            .WithMany(s => s.CheckinsServices)
+                            .HasForeignKey(cs => cs.ServiceId),
+                    cs => cs.HasOne(cs => cs.Checkin)
+                            .WithMany(c => c.CheckinsServices)
+                            .HasForeignKey(cs => cs.CheckinId),
+                    cs =>
+                    {
+                        //cs.HasKey(cs => new { cs.CheckinId, cs.ServiceId });
+                        cs.ToTable("CheckinsServices");
+                    });
         }
     }
 }
