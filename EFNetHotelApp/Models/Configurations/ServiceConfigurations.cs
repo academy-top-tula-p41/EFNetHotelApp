@@ -10,7 +10,7 @@ namespace EFNetHotelApp.Models.Configurations
     {
         public void Configure(EntityTypeBuilder<Service> builder)
         {
-            builder.HasAlternateKey(s => s.Title);
+            //builder.HasAlternateKey(s => s.Title);
         }
     }
 }
