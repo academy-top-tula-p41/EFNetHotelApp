@@ -34,9 +34,9 @@ while(true)
     {
         case 1: ServicesCrud(); break;
         case 2: ComfortsCrud(); break;
+        case 4: RoomsCrud(); break;
+        case 6: Selects(); break;
     }
-
-    
 }
 
 
@@ -216,10 +216,10 @@ void ComfortsCrud()
         Console.ReadKey();
     }
 }
-
-void ComfortsRead()
+void ComfortsRead(bool isClear = true)
 {
-    Console.Clear();
+    if(isClear)
+        Console.Clear();
 
     using (HotelDbContext context = new())
     {
@@ -232,7 +232,6 @@ void ComfortsRead()
         Console.WriteLine();
     }
 }
-
 void ComfortsCreate()
 {
     Console.Clear();
@@ -256,7 +255,6 @@ void ComfortsCreate()
         context.SaveChanges();
     }
 }
-
 void ComfortsUpdate()
 {
     ComfortsRead();
@@ -279,7 +277,6 @@ void ComfortsUpdate()
         context.SaveChanges();
     }
 }
-
 void ComfortsDelete()
 {
     ComfortsRead();
@@ -294,5 +291,348 @@ void ComfortsDelete()
 
         context.Comforts.Remove(comfort);
         context.SaveChanges();
+    }
+}
+
+
+void RoomsCrud()
+{
+    while (true)
+    {
+        var choiseCrud = MenuShow(4);
+        if (choiseCrud == 0) break;
+
+        switch (choiseCrud)
+        {
+            case 40: break;
+            case 41:
+                RoomsCreate();
+                break;
+            case 42:
+                RoomsUpdate();
+                break;
+            case 43:
+                ComfortsDelete();
+                break;
+        }
+        RoomsRead();
+
+        Console.WriteLine("For continue press any key...");
+        Console.ReadKey();
+    }
+}
+void RoomsRead(bool isPaging = true, bool isClear = true)
+{
+    if(isClear)
+        Console.Clear();
+
+    using (HotelDbContext context = new())
+    {
+        var rooms = context.Rooms
+                              .Join(context.Comforts,
+                              r => r.ComfortId,
+                              c => c.Id,
+                              (r, c) => new
+                              {
+                                  r.Id,
+                                  r.Number,
+                                  r.Capacity,
+                                  r.Price,
+                                  Comfort = c.Title
+                              });
+
+        //var rooms = context.Rooms
+        //                       .Include(r => r.Comfort);
+
+        int pageSize = 10;
+        int pageCurrent = 0;
+        int pagesCount = (int)Math.Ceiling(rooms.Count() / (double)pageSize);
+
+        
+        int maxComfortLength = context.Comforts.Max(c => c.Title.Length);
+
+        bool isExit = false;
+
+        while(!isExit)
+        {
+            Console.Clear();
+
+            Console.WriteLine("Rooms:");
+            Console.WriteLine("-------------------------------------");
+            Console.WriteLine("< - To Left, > - To Right, Esc - Exit");
+            Console.WriteLine("-------------------------------------");
+            Console.WriteLine($"Page {pageCurrent + 1} | Pages: {pagesCount}");
+            Console.WriteLine("-------------------------------------");
+            foreach (var r in rooms.Skip(pageCurrent * pageSize)
+                                   .Take(pageSize))
+                Console.WriteLine($"{r.Id}\t{r.Number}\t{r.Comfort}{new String(' ', maxComfortLength - r.Comfort.Length)}\t{r.Capacity}\t{r.Price}");
+
+            var key = Console.ReadKey();
+            
+            switch(key.Key)
+            {
+                case ConsoleKey.LeftArrow:
+                    if (pageCurrent > 0) pageCurrent--;
+                    break;
+                case ConsoleKey.RightArrow:
+                    if(pageCurrent < pagesCount - 1) pageCurrent++;
+                    break;
+                case ConsoleKey.Escape:
+                    isExit = true;
+                    break;
+            }
+        }
+        
+    }
+}
+void RoomsCreate()
+{
+    Console.Clear();
+
+    Console.WriteLine("Create New Room");
+    Console.WriteLine("------------------");
+
+    Console.Write("Input Number: ");
+    string? number = Console.ReadLine();
+    if (number is null) return;
+
+    Console.Write("Input Capacity: ");
+    if (!Int32.TryParse(Console.ReadLine(), out int capacity)) return;
+
+    ComfortsRead(false);
+    Console.Write("Input Comfort: ");
+    if (!Int32.TryParse(Console.ReadLine(), out int comfort)) return;
+
+    Console.Write("Input Price: ");
+    if (!Decimal.TryParse(Console.ReadLine(), out decimal price)) return;
+
+    using (HotelDbContext context = new())
+    {
+        Room room = new()
+        {
+            Number = number,
+            Capacity = capacity,
+            Comfort = context.Comforts.Find(comfort),
+            Price = price
+        };
+
+        context.Add(room);
+        context.SaveChanges();
+    }
+}
+void RoomsUpdate()
+{
+    RoomsRead();
+
+    Console.Write("Input Id: ");
+    if (!Int32.TryParse(Console.ReadLine(), out int id)) return;
+
+    using(HotelDbContext context = new())
+    {
+        var room = context.Rooms.FirstOrDefault(s => s.Id == id);
+        if (room is null) return;
+
+        Console.Write($"Input new Number<{room.Number}>: ");
+        string? number = Console.ReadLine();
+        if (String.IsNullOrEmpty(number))
+            number = room.Number;
+
+        Console.Write($"Input Capacity<{room.Capacity}>: ");
+        if (!Int32.TryParse(Console.ReadLine(), out int capacity))
+            capacity = room.Capacity;
+
+        Console.Write($"Input Price<{room.Price}>: ");
+        if (!Decimal.TryParse(Console.ReadLine(), out decimal price))
+            price = room.Price;
+
+        //ComfortsRead(false);
+        //Console.Write($"Input Comfort<{context.Comforts.FirstOrDefault(c => c.Id == room.ComfortId)?.Title}>: ");
+        //if (!Int32.TryParse(Console.ReadLine(), out int comfort))
+        //    comfort = (int)room.ComfortId;
+
+        var comforts = context.Comforts.ToList();
+        var comfortId = room.ComfortId;
+        var position = Console.GetCursorPosition();
+
+        bool isSelect = false;
+        while(!isSelect)
+        {
+            Console.SetCursorPosition(position.Left, position.Top);
+            Console.Write(new String(' ', 50));
+            Console.SetCursorPosition(position.Left, position.Top);
+            Console.Write($"Select Comfort<{comforts.Find(c => c.Id == room.ComfortId)?.Title}>: {comforts.Find(c => c.Id == comfortId)?.Title}");
+            var key = Console.ReadKey();
+
+            switch(key.Key)
+            {
+                case ConsoleKey.UpArrow:
+                    if (comfortId > 0) comfortId--;
+                    break;
+                case ConsoleKey.DownArrow:
+                    if (comfortId < comforts.Count - 1) comfortId++;
+                    break;
+                case ConsoleKey.Enter:
+                    isSelect = true;
+                    break;
+
+            }
+        }
+
+        room.Number = number;
+        room.Capacity = capacity;
+        room.Price = price;
+        room.Comfort = context.Comforts.Find(comfortId);
+
+        context.Rooms.Update(room);
+        context.SaveChanges();
+    }
+}
+
+
+void Selects()
+{
+    while (true)
+    {
+        var choiseSelect = MenuShow(6);
+        if (choiseSelect == 0) break;
+
+        switch (choiseSelect)
+        {
+            case 60: SelectClientsDocumenmts(); break;
+            case 61: SelectRoomsFilterComfort(); break;
+
+        }
+
+        Console.WriteLine("For continue press any key...");
+        Console.ReadKey();
+    }
+}
+
+void SelectClientsDocumenmts()
+{
+    using(HotelDbContext context = new())
+    {
+        //var clients = context.Clients
+        //                     .Include(c => c.Document)
+        //                     .Select(c => new
+        //                     {
+        //                         ClientName = c.Name,
+        //                         ClientDocument = c.Document,
+        //                     })
+        //                     .Distinct();
+
+        var clients = from client in context.Clients
+                                            .Include(c => c.Document)
+                      select new
+                      {
+                          ClientName = client.Name,
+                          ClientDocument = client.Document,
+                      };
+
+
+        Console.WriteLine("Clients Names & Documents:");
+        Console.WriteLine("--------------------------");
+
+        foreach (var client in clients)
+            Console.WriteLine($"{client.ClientName} [{client.ClientDocument.Series} {client.ClientDocument.Number}]");
+    }
+    
+}
+void SelectRoomsFilterComfort()
+{
+    using(HotelDbContext context = new())
+    {
+        var comforts = context.Comforts.ToList();
+        comforts.Insert(0, new() { Id = 0, Title = "Все типы" });
+
+        bool isExit = false;
+        
+        int pageSize = 10;
+        int pageCurrent = 0;
+        int pagesCount;
+
+        int comfortIndex = 0;
+
+        while(!isExit)
+        {
+            Console.Clear();
+            var position = Console.GetCursorPosition();
+            bool isSelectFilter = false;
+            while(!isSelectFilter)
+            {
+                Console.SetCursorPosition(position.Left, position.Top);
+                Console.Write(new String(' ', 50));
+                Console.SetCursorPosition(position.Left + 1, position.Top);
+                Console.Write($"Select: {comforts[comfortIndex].Title}");
+
+                var key = Console.ReadKey();
+                switch(key.Key)
+                {
+                    case ConsoleKey.UpArrow:
+                        if (comfortIndex > 0) 
+                            comfortIndex--;
+                        break;
+                    case ConsoleKey.DownArrow:
+                        if (comfortIndex < comforts.Count - 1) 
+                            comfortIndex++;
+                        break;
+                    case ConsoleKey.Enter:
+                        isSelectFilter = true;
+                        pageCurrent = 0;
+                        break;
+                    case ConsoleKey.Escape:
+                        isSelectFilter = true;
+                        isExit = true;
+                        break;
+                }
+            }
+            if (isExit) break;
+            
+            int? comfortId = comforts[comfortIndex].Id;
+
+            var rooms = context.Rooms.ToList();
+            string title = comforts[comfortIndex].Title;
+
+            if(comfortId != 0)
+                rooms = context.Rooms
+                               .Where(r => r.ComfortId == comfortId)
+                               .ToList();
+
+            rooms = rooms.Skip(pageCurrent * pageSize)
+                         .Take(pageSize)
+                         .ToList();
+            
+            pagesCount = (int)Math.Ceiling((double)rooms.Count / pageSize);
+
+            while(!isExit)
+            {
+                Console.Clear();
+                Console.WriteLine($"Rooms: {title}");
+                Console.WriteLine("-------------------------------------");
+                Console.WriteLine("< - To Left, > - To Right, Esc - Exit");
+                Console.WriteLine("-------------------------------------");
+                Console.WriteLine($"Page {pageCurrent + 1} | Pages: {pagesCount}");
+                Console.WriteLine("-------------------------------------");
+
+                foreach (var room in rooms)
+                    Console.WriteLine($"{room.Number}\t{room.Price}");
+
+                var key = Console.ReadKey();
+
+                switch (key.Key)
+                {
+                    case ConsoleKey.LeftArrow:
+                        if (pageCurrent > 0) pageCurrent--;
+                        break;
+                    case ConsoleKey.RightArrow:
+                        if (pageCurrent < pagesCount - 1) pageCurrent++;
+                        break;
+                    case ConsoleKey.Escape:
+                        isExit = true;
+                        break;
+                }
+            }
+            isExit = false;
+        }
     }
 }
