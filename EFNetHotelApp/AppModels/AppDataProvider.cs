@@ -151,6 +151,30 @@ namespace EFNetHotelApp.AppModels
                 Title = "Select Rooms Filter Comfort"
             };
             menu.Add(roomsComfortMenuItem);
+
+            MenuItem clientComfortMenuItem = new()
+            {
+                Id = 62,
+                ParendId = 6,
+                Title = "Select Client And Comfort"
+            };
+            menu.Add(clientComfortMenuItem);
+
+            MenuItem roomComfortGroupMenuItem = new()
+            {
+                Id = 63,
+                ParendId = 6,
+                Title = "Select Group Rooms By Comfort"
+            };
+            menu.Add(roomComfortGroupMenuItem);
+
+            MenuItem totalPriceCheckinsMenuItem = new()
+            {
+                Id = 64,
+                ParendId = 6,
+                Title = "Select Totla Prices For Checkins"
+            };
+            menu.Add(totalPriceCheckinsMenuItem);
         }
 
         public static List<MenuItem> GetMenu(int parentId = 0)

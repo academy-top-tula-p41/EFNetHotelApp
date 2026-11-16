@@ -500,14 +500,15 @@ void Selects()
         {
             case 60: SelectClientsDocumenmts(); break;
             case 61: SelectRoomsFilterComfort(); break;
-
+            case 62: SelectClientsComfort(); break;
+            case 63: SelectGroupRoomsByComfort(); break;
+            case 64: SelectTotalPriceCheckins(); break;
         }
 
         Console.WriteLine("For continue press any key...");
         Console.ReadKey();
     }
 }
-
 void SelectClientsDocumenmts()
 {
     using(HotelDbContext context = new())
@@ -598,11 +599,13 @@ void SelectRoomsFilterComfort()
                                .Where(r => r.ComfortId == comfortId)
                                .ToList();
 
-            rooms = rooms.Skip(pageCurrent * pageSize)
+            pagesCount = (int)Math.Ceiling((double)rooms.Count / pageSize);
+
+            var pagePooms = rooms.Skip(pageCurrent * pageSize)
                          .Take(pageSize)
                          .ToList();
             
-            pagesCount = (int)Math.Ceiling((double)rooms.Count / pageSize);
+            
 
             while(!isExit)
             {
@@ -614,7 +617,7 @@ void SelectRoomsFilterComfort()
                 Console.WriteLine($"Page {pageCurrent + 1} | Pages: {pagesCount}");
                 Console.WriteLine("-------------------------------------");
 
-                foreach (var room in rooms)
+                foreach (var room in pagePooms)
                     Console.WriteLine($"{room.Number}\t{room.Price}");
 
                 var key = Console.ReadKey();
@@ -631,8 +634,143 @@ void SelectRoomsFilterComfort()
                         isExit = true;
                         break;
                 }
+
+                pagePooms = rooms.Skip(pageCurrent * pageSize)
+                             .Take(pageSize)
+                             .ToList();
             }
             isExit = false;
+        }
+    }
+}
+void SelectClientsComfort()
+{
+    using(HotelDbContext context = new())
+    {
+        //var result = from client in context.Clients
+        //             join clientRoom in context.Checkins
+        //                on client.Id equals clientRoom.ClientId
+        //             join room in context.Rooms
+        //                on clientRoom.RoomId equals room.Id
+        //             join comfort in context.Comforts
+        //                on room.ComfortId equals comfort.Id
+        //             select new
+        //             {
+        //                 client.Name,
+        //                 room.Number,
+        //                 room.Price,
+        //                 Comfort = comfort.Title
+        //             };
+
+        var result = context.Clients
+                            .Join(context.Checkins,
+                            cl => cl.Id,
+                            ch => ch.ClientId,
+                            (cl, ch) => new { Name = cl.Name, RoomId = ch.RoomId })
+                            .Join(context.Rooms,
+                            c => c.RoomId,
+                            r => r.Id,
+                            (ch, r) => new { ch.Name, r.Number, r.Price, r.ComfortId })
+                            .Join(context.Comforts,
+                            chr => chr.ComfortId,
+                            cm => cm.Id,
+                            (chr, cmf) => new { chr.Name, chr.Number, chr.Price, Comfort = cmf.Title });
+
+        foreach(var r in result)
+            Console.WriteLine($"Name: {r.Name}, Room Number: {r.Number}, Room Price: {r.Price}, Comfort: {r.Comfort}");
+    }
+    
+}
+void SelectGroupRoomsByComfort()
+{
+    using(HotelDbContext context = new())
+    {
+        //var result = from room in context.Rooms
+        //             join comfort in context.Comforts
+        //                on room.ComfortId equals comfort.Id
+        //             group room by comfort.Title
+        //                into rc
+        //             select new
+        //             {
+        //                 Comfort = rc.Key,
+        //                 Count = rc.Count(),
+        //             };
+
+        //foreach(var r in result)
+        //{
+        //    Console.WriteLine($"Comfort: {r.Comfort} {r.Count}");
+
+        //}   
+        var result = context.Comforts
+                            .Include(cmf => cmf.Rooms)
+                            .ToList();
+
+        foreach(var r in result)
+        {
+            Console.WriteLine($"Comfort: {r.Title}");
+            foreach(var rm in r.Rooms)
+                Console.WriteLine($"\t{rm.Number} {rm.Price}");
+        }
+    }
+}
+void SelectTotalPriceCheckins()
+{
+    using(HotelDbContext context = new())
+    {
+        //var totalPrices = context.Checkins
+        //                         .Where(ch => ch.DateCheckout != null)
+        //                         .Join(context.Rooms,
+        //                         ch => ch.RoomId,
+        //                         r => r.Id,
+        //                         (ch, r) => new
+        //                         {
+        //                             ch.Id,
+        //                             r.Number,
+        //                             r.Price,
+        //                             ch.DateCheckin,
+        //                             ch.DateCheckout,
+        //                             Days = ((DateOnly)ch.DateCheckout).DayNumber - ch.DateCheckin.DayNumber,
+        //                             TotalPrice = r.Price * (((DateOnly)ch.DateCheckout).DayNumber - ch.DateCheckin.DayNumber),
+        //                         });    
+
+        //foreach(var tp in totalPrices)
+        //{
+        //    Console.WriteLine($"{tp.Number} ({tp.Price}) {tp.DateCheckin.ToShortDateString()}-{((DateOnly)tp.DateCheckout).ToShortDateString()} [{tp.Days}]: {tp.TotalPrice}");
+        //}
+
+        var result = context.Checkins
+                            .Where(ch => ch.DateCheckout != null)
+                            .Include(ch => ch.Room)
+                                .ThenInclude(r => r.Comfort)
+                            .Include(ch => ch.Client)
+                                .ThenInclude(cl => cl.Document)
+                            .Include(ch => ch.CheckinsServices!)
+                                .ThenInclude(ser => ser.Service);
+
+        foreach(var res in result)
+        {
+            int days = ((DateOnly)res.DateCheckout).DayNumber - res.DateCheckin.DayNumber;
+            Console.Write($"\nCheckin: {res.DateCheckin}-{res.DateCheckout}");
+            Console.WriteLine($" [{days}]");
+            Console.Write($"Client: {res.Client.Name}");
+            Console.WriteLine($" [{res.Client.Document.Series} {res.Client.Document.Number}]");
+            Console.Write($"Room {res.Room.Number} ({res.Room.Price}) {res.Room.Comfort?.Title}");
+            
+            decimal arendaPrice = days * res.Room.Price;
+            Console.WriteLine($" Arenda Price: {arendaPrice}");
+
+            decimal servicesPrice = 0;
+            foreach(var ser in res.CheckinsServices)
+            {
+                Console.Write($"\tService: {ser.Service.Title}");
+                Console.Write($" (Price: {ser.Service.Price})");
+                Console.Write($" Dayly: {ser.Service.Daily}");
+                Console.WriteLine($" Quantity: {ser.Quantity}");
+                servicesPrice += ser.Quantity * ser.Service.Price;
+            }
+
+            Console.WriteLine(new String('-', 80));
+            Console.WriteLine($"Total Price: {arendaPrice + servicesPrice}\n");
         }
     }
 }

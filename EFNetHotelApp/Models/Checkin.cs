@@ -7,7 +7,10 @@ namespace EFNetHotelApp.Models
     public class Checkin
     {
         public int Id { get; set; }
+        public int ClientId { get; set; }
         public Client Client { get; set; } = new();
+
+        public int RoomId { get; set; }
         public Room Room { get; set; } = new();
         public DateOnly DateCheckin { get; set; }
         public DateOnly? DateCheckout { get; set; }
